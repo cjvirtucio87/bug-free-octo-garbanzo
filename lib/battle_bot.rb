@@ -1,4 +1,6 @@
 class BattleBot
+  @@count = 0
+
   attr_reader :name, :health, :enemies
 
   def initialize(name)
@@ -8,6 +10,7 @@ class BattleBot
     @weapon = nil
     @dead = false
     @enemies = []
+    @@count += 1
   end
 
   def dead?
@@ -17,7 +20,10 @@ class BattleBot
   def take_damage(num)
     raise ArgumentError if !(num.is_a?(Fixnum))
     @health -= num
-    @health = 0 if @health < 0
+    if @health < 0
+      @@count -= 1
+      @health = 0
+    end
     @health
   end
 
@@ -32,6 +38,7 @@ class BattleBot
     when !bot.is_a?(BattleBot), (bot.object_id == object_id), @weapon.nil?
       raise ArgumentError
     end
+    return if dead? || bot.dead?
     bot.send(:receive_attack_from,self)
   end
 
@@ -40,15 +47,18 @@ class BattleBot
     when !bot.is_a?(BattleBot), (bot.object_id == object_id), bot.weapon.nil?
       raise ArgumentError
     end
+    return if dead? || bot.dead?
     @enemies.push(bot) unless @enemies.include?(bot)
-    defend_against(bot)
     take_damage(bot.weapon.damage)
+    defend_against(bot) 
   end
 
   def defend_against(bot)
-    if !(self.dead?) && self.has_weapon? && (bot.object_id != self.object_id)
-      attack(bot)
+    case
+    when dead?, bot.dead?, !has_weapon?, (bot.object_id == self.object_id)
+      return
     end
+    attack(bot)
   end
 
   def has_weapon?
@@ -74,5 +84,10 @@ class BattleBot
     @weapon.bot = nil
     @weapon = nil
   end
+
+  def self.count
+    @@count
+  end
+
 
 end
